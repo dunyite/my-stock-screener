@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>賭場營業中</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen p-6">
+    <div class="max-w-6xl mx-auto">
+        <header class="flex justify-between items-center mb-8 border-b border-slate-800 pb-4">
+            <div>
+                <h1 class="text-2xl font-bold text-emerald-400">📈 賭場營業中</h1>
+                <p class="text-sm text-slate-400 mt-1">自動排除金融股與 ETF ｜ 每日自動爬蟲與運算</p>
+            </div>
+            <div id="update-time" class="text-xs bg-slate-800 px-3 py-1.5 rounded-full text-slate-300">
+                資料更新中...
+            </div>
+        </header>
+
+        <!-- 6大條件提示 -->
+        <div class="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4 mb-6 text-sm text-slate-300">
+            <span class="font-semibold text-emerald-400">目前套用選股條件 (AND)：</span>
+            1日均價≥50 ｜ 1日前收盤>2日前收盤×1.09 ｜ 日成交量>昨量 ｜ 成交金額>10億 ｜ 1日均價>60日均價 ｜ 日成交量>9,999張
+        </div>
+
+        <!-- 股票清單表格 -->
+        <div class="bg-slate-800 rounded-xl overflow-hidden shadow-xl border border-slate-700">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-slate-900/80 text-slate-400 text-xs uppercase tracking-wider border-b border-slate-700">
+                        <th class="p-4">股票代號/名稱</th>
+                        <th class="p-4">1日均價</th>
+                        <th class="p-4">日成交量</th>
+                        <th class="p-4">成交金額 (億)</th>
+                        <th class="p-4">60日均價</th>
+                        <th class="p-4">相關新聞與數據</th>
+                    </tr>
+                </thead>
+                <tbody id="stock-tbody" class="divide-y divide-slate-700 text-sm">
+                    <tr>
+                        <td colspan="6" class="p-6 text-center text-slate-400">正在讀取最新選股資料...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // 自動讀取同目錄下的 stocks_data.json
+        fetch('stocks_data.json')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('update-time').innerText = `資料更新時間：${data.update_time}`;
+                const tbody = document.getElementById('stock-tbody');
+                tbody.innerHTML = '';
+
+                if(data.stocks.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-400">今日無符合條件之標的</td></tr>`;
+                    return;
+                }
+
+                data.stocks.forEach(stock => {
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-slate-700/50 transition-colors";
+                    tr.innerHTML = `
+                        <td class="p-4 font-bold text-white">${stock.symbol}</td>
+                        <td class="p-4 text-emerald-400 font-semibold">${stock.price.toFixed(2)}</td>
+                        <td class="p-4">${stock.volume.toLocaleString()} 張</td>
+                        <td class="p-4">${stock.turnover.toFixed(1)} 億</td>
+                        <td class="p-4 text-slate-300">${stock.ma60.toFixed(2)}</td>
+                        <td class="p-4">
+                            <a href="https://tw.stock.yahoo.com/q/s?s=${stock.symbol.split('.')[0]}" target="_blank" class="text-blue-400 hover:underline text-xs bg-blue-950/50 px-2.5 py-1 rounded border border-blue-800">Yahoo股市</a>
+                            <a href="https://www.google.com/search?q=台股+${stock.symbol}" target="_blank" class="text-emerald-400 hover:underline text-xs bg-emerald-950/50 px-2.5 py-1 rounded border border-emerald-800 ml-2">Google新聞</a>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            })
+            .catch(err => {
+                document.getElementById('stock-tbody').innerHTML = `<tr><td colspan="6" class="p-6 text-center text-red-400">尚未執行自動更新或找不到 stocks_data.json 檔案（請靜待 GitHub Actions 背景執行或手動觸發一次）。</td></tr>`;
+            });
+    </script>
+</body>
+</html>
